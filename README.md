@@ -28,7 +28,7 @@ This project implements a minimalistic chess game on the blockchain using Solidi
 
 ## Compressed State Representation
 
-See the comments within `src/Chess.sol` for the detailed 4-bit encoding scheme used to represent the 64 squares within the 256-bit state.
+See the comments within src for the detailed 4-bit encoding scheme used to represent the 64 squares within the 256-bit state.
 
 ## Development
 
