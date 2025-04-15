@@ -44,13 +44,13 @@ library ChessLogic {
     uint8 public constant B_KNIGHT = 5;
     uint8 public constant W_BISHOP = 6;
     uint8 public constant B_BISHOP = 7;
-    uint8 public constant W_ROOK = 8; // Moved rook
-    uint8 public constant B_ROOK = 9; // Moved rook
+    uint8 public constant W_ROOK = 8; // Moved rook or standard state after move
+    uint8 public constant B_ROOK = 9; // Moved rook or standard state after move
     uint8 public constant W_QUEEN = 10;
     uint8 public constant B_QUEEN = 11;
     uint8 public constant UNMOVED_KING_OR_ROOK = 12; // Can be K, R (used for castling)
-    uint8 public constant W_KING = 13; // Moved King or standard state
-    uint8 public constant B_KING = 14; // Moved King or standard state
+    uint8 public constant W_KING = 13; // Moved King or standard state after move
+    uint8 public constant B_KING = 14; // Moved King or standard state after move
     uint8 public constant KING_TO_MOVE = 15; // The king whose side is to move
 
     uint8 public constant WHITE = 0;
@@ -62,6 +62,18 @@ library ChessLogic {
     // Standard square indices
     uint8 constant A1 = 0; uint8 constant B1 = 1; uint8 constant C1 = 2; uint8 constant D1 = 3;
     uint8 constant E1 = 4; uint8 constant F1 = 5; uint8 constant G1 = 6; uint8 constant H1 = 7;
+    uint8 constant A2 = 8; uint8 constant B2 = 9; uint8 constant C2 = 10; uint8 constant D2 = 11;
+    uint8 constant E2 = 12; uint8 constant F2 = 13; uint8 constant G2 = 14; uint8 constant H2 = 15;
+    uint8 constant A3 = 16; uint8 constant B3 = 17; uint8 constant C3 = 18; uint8 constant D3 = 19;
+    uint8 constant E3 = 20; uint8 constant F3 = 21; uint8 constant G3 = 22; uint8 constant H3 = 23;
+    uint8 constant A4 = 24; uint8 constant B4 = 25; uint8 constant C4 = 26; uint8 constant D4 = 27;
+    uint8 constant E4 = 28; uint8 constant F4 = 29; uint8 constant G4 = 30; uint8 constant H4 = 31;
+    uint8 constant A5 = 32; uint8 constant B5 = 33; uint8 constant C5 = 34; uint8 constant D5 = 35;
+    uint8 constant E5 = 36; uint8 constant F5 = 37; uint8 constant G5 = 38; uint8 constant H5 = 39;
+    uint8 constant A6 = 40; uint8 constant B6 = 41; uint8 constant C6 = 42; uint8 constant D6 = 43;
+    uint8 constant E6 = 44; uint8 constant F6 = 45; uint8 constant G6 = 46; uint8 constant H6 = 47;
+    uint8 constant A7 = 48; uint8 constant B7 = 49; uint8 constant C7 = 50; uint8 constant D7 = 51;
+    uint8 constant E7 = 52; uint8 constant F7 = 53; uint8 constant G7 = 54; uint8 constant H7 = 55;
     uint8 constant A8 = 56; uint8 constant B8 = 57; uint8 constant C8 = 58; uint8 constant D8 = 59;
     uint8 constant E8 = 60; uint8 constant F8 = 61; uint8 constant G8 = 62; uint8 constant H8 = 63;
 
@@ -99,11 +111,9 @@ library ChessLogic {
      */
     function decode(uint256 encodedState) internal pure returns (DecodedState memory state) {
         state.enPassantTargetSquare = -1; // Default: no en passant
-        uint8 kingToMoveSquare = 255; // Sentinel value
-        uint8 otherKingSquare = 255; // Sentinel value
-        uint8 otherKingId = EMPTY;
         state.whiteKingSquare = 255; // Sentinel value
         state.blackKingSquare = 255; // Sentinel value
+        uint8 kingToMoveIdSquare = 255; // Track square with ID 15
 
         // 1. Decode board, find kings, special pawns, and determine EP target
         for (uint8 i = 0; i < BOARD_SIZE; i++) {
@@ -114,119 +124,79 @@ library ChessLogic {
             if (pieceId == JUST_DOUBLE_MOVED_PAWN) {
                 uint8 rank = i / 8; // Rank where the pawn LANDED (0-indexed)
                 if (rank == 3) { // White pawn just moved e2-e4 (landed on 4th rank), target is behind it (3rd rank)
-                    // FIX: Perform uint8 arithmetic, then cast result to int16
                     state.enPassantTargetSquare = int16(uint16(i - 8)); // e.g., if pawn on e4 (28), target is e3 (20)
                 } else if (rank == 4) { // Black pawn just moved e7-e5 (landed on 5th rank), target is behind it (6th rank)
-                     // FIX: Perform uint8 arithmetic, then cast result to int16
                      state.enPassantTargetSquare = int16(uint16(i + 8)); // e.g., if pawn on d5 (35), target is d6 (43)
                 } else {
-                    // This indicates an invalid encoding (ID 3 on wrong rank)
-                     revert InvalidEncoding();
+                     revert InvalidEncoding(); // ID 3 on wrong rank
                 }
             }
 
-            // Locate Kings - Initial Pass
-            if (pieceId == KING_TO_MOVE) {
-                kingToMoveSquare = i;
-            } else if (pieceId == W_KING) {
-                otherKingSquare = i;
-                otherKingId = pieceId;
+            // Locate Kings - Find squares for all possible king representations
+            if (pieceId == W_KING || (pieceId == UNMOVED_KING_OR_ROOK && i == E1)) {
+                if (state.whiteKingSquare != 255) revert InvalidEncoding(); // Found second white king
                 state.whiteKingSquare = i;
-            } else if (pieceId == B_KING) {
-                otherKingSquare = i;
-                otherKingId = pieceId;
+            } else if (pieceId == B_KING || (pieceId == UNMOVED_KING_OR_ROOK && i == E8)) {
+                if (state.blackKingSquare != 255) revert InvalidEncoding(); // Found second black king
                 state.blackKingSquare = i;
-            } else if (pieceId == UNMOVED_KING_OR_ROOK) {
-                // If an unmoved piece is on a king start square, store it temporarily
-                if (i == E1) state.whiteKingSquare = i;
-                else if (i == E8) state.blackKingSquare = i;
+            } else if (pieceId == KING_TO_MOVE) {
+                if (kingToMoveIdSquare != 255) revert InvalidEncoding(); // Found second KING_TO_MOVE
+                kingToMoveIdSquare = i;
             }
         }
 
-        // 2. Determine whose turn it is based on King IDs
-        if (kingToMoveSquare == 255) {
-             // KING_TO_MOVE ID (15) wasn't found. This should only happen in the initial state
-             // where White King is 15 and Black King is 14.
-             // Let's re-verify king positions and IDs for robustness.
-             state.whiteKingSquare = 255; // Reset sentinels
-             state.blackKingSquare = 255;
-             for(uint8 i = 0; i < BOARD_SIZE; i++) {
-                 uint8 pid = state.board[i];
-                 if (pid == W_KING || (pid == UNMOVED_KING_OR_ROOK && i == E1)) state.whiteKingSquare = i;
-                 else if (pid == B_KING || (pid == UNMOVED_KING_OR_ROOK && i == E8)) state.blackKingSquare = i;
-                 else if (pid == KING_TO_MOVE) kingToMoveSquare = i; // Found it after all?
-             }
-
-             if (kingToMoveSquare != 255) {
-                 // KING_TO_MOVE was found, proceed as in the 'else' block below
-                 if (kingToMoveSquare == state.whiteKingSquare) {
-                     state.turn = WHITE;
-                     if (state.blackKingSquare == 255) revert InvalidEncoding(); // Missing black king
-                 } else if (kingToMoveSquare == state.blackKingSquare) {
-                     state.turn = BLACK;
-                     if (state.whiteKingSquare == 255) revert InvalidEncoding(); // Missing white king
-                 } else {
-                     revert InvalidEncoding(); // KING_TO_MOVE not on a king square
-                 }
-             } else {
-                 // KING_TO_MOVE truly not found. Check if it's the initial state.
-                 if (state.board[E1] == KING_TO_MOVE && state.board[E8] == B_KING) {
-                     state.turn = WHITE;
-                     state.whiteKingSquare = E1;
-                     state.blackKingSquare = E8;
-                 } else {
-                     // Not initial state and KING_TO_MOVE missing -> error
-                     revert InvalidEncoding();
-                 }
-             }
-        } else { // KING_TO_MOVE (15) was found directly
-            // Find the other king (ID 13 or 14 or 12 on start square)
-             state.whiteKingSquare = 255; // Reset sentinels
-             state.blackKingSquare = 255;
-             for(uint8 i = 0; i < BOARD_SIZE; i++) {
-                 uint8 pid = state.board[i];
-                 if (pid == W_KING || (pid == UNMOVED_KING_OR_ROOK && i == E1)) {
-                    state.whiteKingSquare = i;
-                    otherKingId = W_KING; // Treat unmoved as W_KING for turn logic
-                 } else if (pid == B_KING || (pid == UNMOVED_KING_OR_ROOK && i == E8)) {
-                     state.blackKingSquare = i;
-                     otherKingId = B_KING; // Treat unmoved as B_KING for turn logic
-                 }
-             }
-
-             // Now assign the kingToMoveSquare to the correct color based on the *other* king found
-             if (otherKingId == W_KING) {
-                 // The standard/unmoved king is White, so KING_TO_MOVE (15) must be Black
-                 state.turn = BLACK;
-                 state.blackKingSquare = kingToMoveSquare; // Correct the black king square
-                 if (state.whiteKingSquare == 255) revert InvalidEncoding(); // White king missing
-             } else if (otherKingId == B_KING) {
-                 // The standard/unmoved king is Black, so KING_TO_MOVE (15) must be White
+        // 2. Determine whose turn it is and finalize king squares
+        if (kingToMoveIdSquare != 255) {
+            // KING_TO_MOVE ID (15) was found. Determine which king it is.
+            if (state.whiteKingSquare == 255 && state.blackKingSquare != 255) {
+                // The other king found is Black (ID 14 or 12 on E8). So, ID 15 must be White.
+                state.whiteKingSquare = kingToMoveIdSquare;
+                state.turn = WHITE;
+            } else if (state.blackKingSquare == 255 && state.whiteKingSquare != 255) {
+                // The other king found is White (ID 13 or 12 on E1). So, ID 15 must be Black.
+                state.blackKingSquare = kingToMoveIdSquare;
+                state.turn = BLACK;
+            } else {
+                // Found both standard kings OR neither standard king along with ID 15. Invalid state.
+                revert InvalidEncoding();
+            }
+        } else {
+            // KING_TO_MOVE ID (15) was NOT found. This should only be the initial state.
+            // In the initial state, White King is 15, Black King is 14.
+            // getInitialState() sets board[E1]=15, board[E8]=14.
+            // Our loop above should have found blackKingSquare=E8 (ID 14) and whiteKingSquare=255.
+            // We need to check if the piece at E1 is indeed KING_TO_MOVE.
+            if (state.board[E1] == KING_TO_MOVE && state.board[E8] == B_KING && state.whiteKingSquare == 255 && state.blackKingSquare == E8) {
+                 state.whiteKingSquare = E1; // Correctly assign E1 to white king
                  state.turn = WHITE;
-                 state.whiteKingSquare = kingToMoveSquare; // Correct the white king square
-                 if (state.blackKingSquare == 255) revert InvalidEncoding(); // Black king missing
-             } else {
-                  // This implies only KING_TO_MOVE was found, and no other king ID (13, 14, or 12 on start sq)
-                  revert InvalidEncoding(); // Could not determine turn / missing other king
-             }
+            } else {
+                 // Not the initial state and KING_TO_MOVE ID is missing.
+                 revert InvalidEncoding();
+            }
         }
 
-
-         // 3. Determine Castling Rights based on UNMOVED pieces on STARTING squares
-         // White Kingside: UNMOVED King on e1 AND UNMOVED Rook on h1
-        state.whiteKingsideCastle = state.board[E1] == UNMOVED_KING_OR_ROOK && state.board[H1] == UNMOVED_KING_OR_ROOK;
-        // White Queenside: UNMOVED King on e1 AND UNMOVED Rook on a1
-        state.whiteQueensideCastle = state.board[E1] == UNMOVED_KING_OR_ROOK && state.board[A1] == UNMOVED_KING_OR_ROOK;
-        // Black Kingside: UNMOVED King on e8 AND UNMOVED Rook on h8
-        state.blackKingsideCastle = state.board[E8] == UNMOVED_KING_OR_ROOK && state.board[H8] == UNMOVED_KING_OR_ROOK;
-        // Black Queenside: UNMOVED King on e8 AND UNMOVED Rook on a8
-        state.blackQueensideCastle = state.board[E8] == UNMOVED_KING_OR_ROOK && state.board[A8] == UNMOVED_KING_OR_ROOK;
-
-        // Final check for king positions (redundant if above logic is perfect, but safe)
+        // Final check: Ensure both kings were located.
         if (state.whiteKingSquare == 255 || state.blackKingSquare == 255) {
-             revert InvalidEncoding(); // Failed to locate both kings
+            revert InvalidEncoding(); // Failed to locate both kings
         }
+
+        // 3. Determine Castling Rights based on UNMOVED pieces on STARTING squares
+        // Check if the piece on the king's square is UNMOVED_KING_OR_ROOK (ID 12) or the initial KING_TO_MOVE/B_KING
+        bool whiteKingUnmovedCheck = state.board[E1] == UNMOVED_KING_OR_ROOK || state.board[E1] == KING_TO_MOVE; // ID 15 implies unmoved initially
+        bool blackKingUnmovedCheck = state.board[E8] == UNMOVED_KING_OR_ROOK || state.board[E8] == B_KING; // ID 14 implies unmoved initially
+
+        // Check if the piece on the rook's square is UNMOVED_KING_OR_ROOK (ID 12)
+        bool whiteHRookUnmovedCheck = state.board[H1] == UNMOVED_KING_OR_ROOK;
+        bool whiteARookUnmovedCheck = state.board[A1] == UNMOVED_KING_OR_ROOK;
+        bool blackHRookUnmovedCheck = state.board[H8] == UNMOVED_KING_OR_ROOK;
+        bool blackARookUnmovedCheck = state.board[A8] == UNMOVED_KING_OR_ROOK;
+
+        state.whiteKingsideCastle = whiteKingUnmovedCheck && whiteHRookUnmovedCheck;
+        state.whiteQueensideCastle = whiteKingUnmovedCheck && whiteARookUnmovedCheck;
+        state.blackKingsideCastle = blackKingUnmovedCheck && blackHRookUnmovedCheck;
+        state.blackQueensideCastle = blackKingUnmovedCheck && blackARookUnmovedCheck;
     }
+
 
     /**
      * @notice Encodes a decoded state back into the compact 256-bit integer.
@@ -249,10 +219,10 @@ library ChessLogic {
         // Place UNMOVED Rooks and King placeholders first (ID 12)
         encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (A1 * 4); // a1
         encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (H1 * 4); // h1
-        encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (E1 * 4); // e1 (placeholder)
+        // encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (E1 * 4); // e1 placeholder - will be overwritten
         encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (A8 * 4); // a8
         encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (H8 * 4); // h8
-        encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (E8 * 4); // e8 (placeholder)
+        // encodedState |= uint256(UNMOVED_KING_OR_ROOK) << (E8 * 4); // e8 placeholder - will be overwritten
 
         // Knights
         encodedState |= uint256(W_KNIGHT) << (B1 * 4); encodedState |= uint256(W_KNIGHT) << (G1 * 4);
@@ -269,9 +239,6 @@ library ChessLogic {
         for (uint8 i = 48; i < 56; i++) { encodedState |= uint256(B_PAWN) << (i * 4); } // Rank 7
 
         // Manually set correct King IDs for turn (White moves first)
-        // Clear e1 (square 4) and e8 (square 60) placeholders first
-        encodedState &= ~(SQUARE_MASK << (E1 * 4));
-        encodedState &= ~(SQUARE_MASK << (E8 * 4));
         // Set White King to KING_TO_MOVE (15) on e1
         encodedState |= uint256(KING_TO_MOVE) << (E1 * 4);
         // Set Black King to B_KING (14) on e8
@@ -312,7 +279,7 @@ library ChessLogic {
              revert InvalidSquare();
         }
         uint8 pieceId = state.board[fromSquare];
-        if (pieceId == EMPTY || getColor(state.board, fromSquare) != playerColor) {
+        if (pieceId == EMPTY || getColor(state.board, fromSquare, playerColor) != playerColor) { // Pass context color
              revert InvalidMove(); // Trying to move empty square or opponent's piece
         }
 
@@ -344,7 +311,6 @@ library ChessLogic {
         // Use getBasePieceType with context for pieceId
         uint8 movedBaseType = getBasePieceType(pieceId, fromSquare);
         if (movedBaseType == W_PAWN) { // W_PAWN is the base type for pawns
-            // FIX: Calculate difference using uint256 and check magnitude
             uint256 uDiff = (toSquare > fromSquare) ? toSquare - fromSquare : fromSquare - toSquare;
             if (uDiff == 16) { // Check for double step
                 nextState.board[toSquare] = JUST_DOUBLE_MOVED_PAWN;
@@ -373,10 +339,10 @@ library ChessLogic {
     ) internal pure returns (bool) {
         uint8 piece = state.board[from];
         uint8 targetPiece = state.board[to];
-        uint8 movingColor = getColor(state.board, from); // Use context-aware getColor
+        uint8 movingColor = getColor(state.board, from, state.turn); // Pass current turn as context
 
         // Basic checks: cannot capture own piece
-        if (targetPiece != EMPTY && getColor(state.board, to) == movingColor) {
+        if (targetPiece != EMPTY && getColor(state.board, to, state.turn) == movingColor) { // Pass context color
             return false;
         }
 
@@ -408,8 +374,7 @@ library ChessLogic {
     }
 
     function isPawnMoveLegal(DecodedState memory state, uint8 from, uint8 to, uint8 promotionPieceType) internal pure returns (bool) {
-        uint8 movingColor = getColor(state.board, from);
-        // FIX: Calculate difference using uint256 and check sign/magnitude later
+        uint8 movingColor = getColor(state.board, from, state.turn); // Pass context color
         uint256 uDiff = (to > from) ? to - from : from - to;
         bool movingForward = (movingColor == WHITE && to > from) || (movingColor == BLACK && from > to);
         uint8 fromRank = from / 8;
@@ -434,15 +399,17 @@ library ChessLogic {
             if (movingForward && (uDiff == 7 || uDiff == 9) && fileDiff == 1) { // Diagonal forward
                 bool isPromotion = (toRank == 7);
                 // Standard capture
-                if (state.board[to] != EMPTY && getColor(state.board, to) == BLACK) {
+                if (state.board[to] != EMPTY && getColor(state.board, to, state.turn) == BLACK) { // Pass context color
                     if (isPromotion && !isValidPromotionPiece(WHITE, promotionPieceType)) return false;
                     if (!isPromotion && promotionPieceType != EMPTY) return false;
                     return true;
                 }
                 // En passant capture
-                // FIX: Check EP target >= 0 and cast EP target to uint8 for comparison
                 if (state.enPassantTargetSquare >= 0 && to == uint8(uint16(state.enPassantTargetSquare))) {
-                    return promotionPieceType == EMPTY; // Cannot promote on en passant
+                    // Check the square *behind* the target square actually has the opponent's pawn (which must be JUST_DOUBLE_MOVED_PAWN)
+                    if (state.board[to - 8] == JUST_DOUBLE_MOVED_PAWN) {
+                         return promotionPieceType == EMPTY; // Cannot promote on en passant
+                    }
                 }
             }
         } else { // BLACK pawn move
@@ -461,15 +428,17 @@ library ChessLogic {
             if (movingForward && (uDiff == 7 || uDiff == 9) && fileDiff == 1) { // Diagonal forward
                  bool isPromotion = (toRank == 0);
                  // Standard capture
-                if (state.board[to] != EMPTY && getColor(state.board, to) == WHITE) {
+                if (state.board[to] != EMPTY && getColor(state.board, to, state.turn) == WHITE) { // Pass context color
                     if (isPromotion && !isValidPromotionPiece(BLACK, promotionPieceType)) return false;
                     if (!isPromotion && promotionPieceType != EMPTY) return false;
                     return true;
                 }
                 // En passant capture
-                // FIX: Check EP target >= 0 and cast EP target to uint8 for comparison
                 if (state.enPassantTargetSquare >= 0 && to == uint8(uint16(state.enPassantTargetSquare))) {
-                    return promotionPieceType == EMPTY; // Cannot promote on en passant
+                     // Check the square *behind* the target square actually has the opponent's pawn (which must be JUST_DOUBLE_MOVED_PAWN)
+                     if (state.board[to + 8] == JUST_DOUBLE_MOVED_PAWN) {
+                         return promotionPieceType == EMPTY; // Cannot promote on en passant
+                     }
                 }
             }
         }
@@ -480,7 +449,6 @@ library ChessLogic {
         // Target square occupation (own piece) checked in isMovePseudoLegal caller
         uint8 file1 = from % 8; uint8 rank1 = from / 8;
         uint8 file2 = to % 8;   uint8 rank2 = to / 8;
-        // FIX: Calculate unsigned differences
         uint8 dFile = (file2 > file1) ? file2 - file1 : file1 - file2;
         uint8 dRank = (rank2 > rank1) ? rank2 - rank1 : rank1 - rank2;
         return (dFile == 1 && dRank == 2) || (dFile == 2 && dRank == 1);
@@ -489,11 +457,10 @@ library ChessLogic {
     // Checks sliding moves (Bishop, Rook, Queen) for obstructions
     function isSlidingMoveLegal(uint8[BOARD_SIZE] memory board, uint8 from, uint8 to, bool diagonal, bool orthogonal) internal pure returns (bool) {
         // Target square occupation (own piece) checked in isMovePseudoLegal caller
-        int8 file1 = int8(from % 8); int8 rank1 = int8(from / 8);
-        int8 file2 = int8(to % 8);   int8 rank2 = int8(to / 8);
+        int8 file1 = int8(uint8(from % 8)); int8 rank1 = int8(uint8(from / 8)); // Cast to uint8 first
+        int8 file2 = int8(uint8(to % 8));   int8 rank2 = int8(uint8(to / 8));   // Cast to uint8 first
         int8 dFile = file2 - file1; int8 dRank = rank2 - rank1;
 
-        // FIX: Explicitly cast subtraction result to int8 before calling abs(int8)
         bool isDiagonal = abs(dFile) == abs(dRank) && dFile != 0;
         bool isOrthogonal = (dFile == 0 && dRank != 0) || (dFile != 0 && dRank == 0);
 
@@ -503,7 +470,6 @@ library ChessLogic {
         }
 
         // Determine step direction
-        // FIX: Explicitly cast literals to int8 in ternary
         int8 stepFile = (dFile > 0) ? int8(1) : ((dFile < 0) ? int8(-1) : int8(0));
         int8 stepRank = (dRank > 0) ? int8(1) : ((dRank < 0) ? int8(-1) : int8(0));
 
@@ -515,7 +481,7 @@ library ChessLogic {
             if (currentRank < 0 || currentRank > 7 || currentFile < 0 || currentFile > 7) {
                 revert InvalidEncoding(); // Path goes off board - should not happen with valid inputs
             }
-            // FIX: Cast int8 rank/file directly to uint8 for square index calculation
+            // FIX: Cast int8 directly to uint8 for square index calculation
             uint8 intermediateSquare = uint8(currentRank) * 8 + uint8(currentFile);
             if (board[intermediateSquare] != EMPTY) {
                 return false; // Path is blocked
@@ -529,10 +495,9 @@ library ChessLogic {
 
     function isKingMoveLegal(DecodedState memory state, uint8 from, uint8 to) internal pure returns (bool) {
         // Target square occupation (own piece) checked in isMovePseudoLegal caller
-        uint8 movingColor = getColor(state.board, from);
+        uint8 movingColor = getColor(state.board, from, state.turn); // Pass context color
         uint8 file1 = from % 8; uint8 rank1 = from / 8;
         uint8 file2 = to % 8;   uint8 rank2 = to / 8;
-        // FIX: Calculate unsigned differences
         uint8 dFile = (file2 > file1) ? file2 - file1 : file1 - file2;
         uint8 dRank = (rank2 > rank1) ? rank2 - rank1 : rank1 - rank2;
 
@@ -543,9 +508,8 @@ library ChessLogic {
         }
 
         // 2. Castling
-        // FIX: Calculate unsigned difference
         uint256 uDiff = (to > from) ? to - from : from - to;
-        if (uDiff == 2) { // Potential castle
+        if (uDiff == 2 && dRank == 0) { // Potential castle (must be horizontal)
             uint8 opponentColor = 1 - movingColor;
 
             // Check if King is currently in check - cannot castle out of check
@@ -597,13 +561,12 @@ library ChessLogic {
     ) internal pure returns (DecodedState memory nextState) {
         nextState = state; // Create a working copy
         uint8 pieceToMove = nextState.board[from];
-        uint8 movingColor = getColor(nextState.board, from);
+        uint8 movingColor = getColor(nextState.board, from, state.turn); // Pass context color
 
         // Determine base type contextually for ID 12
         uint8 baseType = getBasePieceType(pieceToMove, from);
 
         // 1. En Passant Capture: Remove the captured pawn
-        // FIX: Check EP target >= 0 and cast EP target to uint8 for comparison
         if (baseType == W_PAWN && state.enPassantTargetSquare >= 0 && to == uint8(uint16(state.enPassantTargetSquare)))
         {
             uint8 capturedPawnSquare;
@@ -613,7 +576,8 @@ library ChessLogic {
                 capturedPawnSquare = to + 8; // White pawn was on rank 3 (e.g., target c3 -> pawn c4)
             }
             // Ensure we are capturing the correct piece (should be opponent's pawn)
-            if (nextState.board[capturedPawnSquare] != EMPTY && getColor(nextState.board, capturedPawnSquare) != movingColor) {
+            // The piece being captured EP *must* have the JUST_DOUBLE_MOVED_PAWN ID
+            if (nextState.board[capturedPawnSquare] == JUST_DOUBLE_MOVED_PAWN) {
                 nextState.board[capturedPawnSquare] = EMPTY; // Remove captured pawn
             } else {
                 revert InvalidMove(); // EP capture logic error or invalid state
@@ -621,9 +585,8 @@ library ChessLogic {
         }
 
         // 2. Castling: Move the Rook in addition to the King
-        // FIX: Calculate unsigned difference
         uint256 uDiff = (to > from) ? to - from : from - to;
-        if (baseType == W_KING && uDiff == 2)
+        if (baseType == W_KING && uDiff == 2 && (from / 8 == to / 8)) // Check horizontal move by 2
         {
             uint8 rookFrom;
             uint8 rookTo;
@@ -634,8 +597,10 @@ library ChessLogic {
                 rookFrom = A1; rookTo = D1; rookType = W_ROOK;
             } else if (to == G8) { // Black Kingside (e8g8)
                 rookFrom = H8; rookTo = F8; rookType = B_ROOK;
-            } else { // Black Queenside (e8c8) (to == C8)
+            } else if (to == C8) { // Black Queenside (e8c8)
                 rookFrom = A8; rookTo = D8; rookType = B_ROOK;
+            } else {
+                 revert InvalidMove(); // King move by 2 not on back rank or not to c/g file
             }
             // Move the rook (must be UNMOVED type initially)
             if (nextState.board[rookFrom] != UNMOVED_KING_OR_ROOK) revert InvalidMove(); // Should have been caught by pseudo-legal check
@@ -662,7 +627,9 @@ library ChessLogic {
         }
         // Ensure Rook has correct standard ID after moving
          else if (baseType == W_ROOK) {
-             pieceIdToPlace = (movingColor == WHITE) ? W_ROOK : B_ROOK;
+             // This case handles a rook that might have already moved (ID 8 or 9) moving again.
+             // No ID change needed here, it stays W_ROOK or B_ROOK.
+             // pieceIdToPlace = (movingColor == WHITE) ? W_ROOK : B_ROOK; // Redundant
          }
 
         // 2. Pawn Promotion
@@ -704,17 +671,12 @@ library ChessLogic {
         // Iterate through all squares to find opponent pieces
         for (uint8 i = 0; i < BOARD_SIZE; i++) {
             uint8 piece = board[i];
-            // Check if the piece belongs to the attacker and is not empty
             if (piece != EMPTY) {
-                 uint8 currentPieceColor;
-                 // FIX: Handle KING_TO_MOVE ambiguity without try/catch
-                 if (piece == KING_TO_MOVE) {
-                     // Infer color based on context (attackerColor)
-                     currentPieceColor = attackerColor;
-                 } else {
-                     // For other pieces, getColor is safe (or should revert on invalid state)
-                     currentPieceColor = getColor(board, i);
-                 }
+                 // Determine the color of the piece at square 'i'.
+                 // We need the context of whose turn it *would* be if this piece were KING_TO_MOVE.
+                 // Since we are checking attacks *by* attackerColor, the context turn is the *other* color.
+                 uint8 contextTurn = 1 - attackerColor;
+                 uint8 currentPieceColor = getColor(board, i, contextTurn);
 
                 if (currentPieceColor == attackerColor) {
                     // Check if this opponent piece's attack pattern covers the target square
@@ -740,29 +702,22 @@ library ChessLogic {
         uint8 piece = board[from];
         if (piece == EMPTY) return false;
 
-        // Determine base type and color contextually
+        // Determine base type contextually
         uint8 baseType = getBasePieceType(piece, from);
-        uint8 attackerColor = 0; // Initialize attackerColor - needed for pawn check
-
-        // FIX: Handle KING_TO_MOVE ambiguity without try/catch
-        if (piece == KING_TO_MOVE) {
-            // Cannot determine attacker color reliably here without full state context.
-            // However, for attack checks, only the KING base type matters for its pattern.
-            // If it's KING_TO_MOVE, we proceed assuming it's a king, color check happens in isSquareAttacked.
-            if (baseType != W_KING) return false; // Should be king if KING_TO_MOVE
-            // We don't need the exact color for the king's attack pattern check itself.
-        } else {
-            // For other pieces, getColor is safe (or should revert on invalid state)
-            attackerColor = getColor(board, from);
-        }
-
 
         // --- Piece Specific Attack Patterns ---
         if (baseType == W_PAWN) {
-            // FIX: Calculate difference using uint256 and check sign/magnitude
+            // Need color to determine attack direction
+            uint8 attackerColor;
+            // Determine color based on standard IDs or position for special IDs.
+            // This doesn't need the global turn context because we only care about the piece's inherent color for its attack pattern.
+            if (piece == W_PAWN || (piece == JUST_DOUBLE_MOVED_PAWN && from / 8 == 3)) attackerColor = WHITE;
+            else if (piece == B_PAWN || (piece == JUST_DOUBLE_MOVED_PAWN && from / 8 == 4)) attackerColor = BLACK;
+            else return false; // Not a pawn type that can attack
+
             uint256 uDiff = (to > from) ? to - from : from - to;
             uint8 fileDiff = (to % 8 > from % 8) ? (to % 8) - (from % 8) : (from % 8) - (to % 8);
-            if (attackerColor == WHITE) { // Need color here
+            if (attackerColor == WHITE) {
                 return to > from && (uDiff == 7 || uDiff == 9) && fileDiff == 1; // White pawns attack diagonally forward
             } else { // Black Pawn
                 return from > to && (uDiff == 7 || uDiff == 9) && fileDiff == 1; // Black pawns attack diagonally forward
@@ -771,7 +726,6 @@ library ChessLogic {
         if (baseType == W_KNIGHT) {
             uint8 file1 = from % 8; uint8 rank1 = from / 8;
             uint8 file2 = to % 8;   uint8 rank2 = to / 8;
-            // FIX: Calculate unsigned differences
             uint8 dFile = (file2 > file1) ? file2 - file1 : file1 - file2;
             uint8 dRank = (rank2 > rank1) ? rank2 - rank1 : rank1 - rank2;
             return (dFile == 1 && dRank == 2) || (dFile == 2 && dRank == 1);
@@ -785,10 +739,9 @@ library ChessLogic {
         if (baseType == W_QUEEN) {
              return isSlidingMoveLegal(board, from, to, true, true); // Check both paths clear
          }
-         if (baseType == W_KING) { // Covers W_KING, B_KING, KING_TO_MOVE
+         if (baseType == W_KING) { // Covers W_KING, B_KING, KING_TO_MOVE, UNMOVED_KING_OR_ROOK on E1/E8
             uint8 file1 = from % 8; uint8 rank1 = from / 8;
             uint8 file2 = to % 8;   uint8 rank2 = to / 8;
-            // FIX: Calculate unsigned differences
             uint8 dFile = (file2 > file1) ? file2 - file1 : file1 - file2;
             uint8 dRank = (rank2 > rank1) ? rank2 - rank1 : rank1 - rank2;
             return dFile <= 1 && dRank <= 1 && (dFile != 0 || dRank != 0); // King attacks adjacent squares
@@ -804,10 +757,10 @@ library ChessLogic {
      * @notice Gets the color of a piece ID, considering context for special IDs.
      * @param board The current board state (needed for context).
      * @param square The square of the piece.
+     * @param contextTurnColor The color whose turn it currently is (needed for KING_TO_MOVE).
      * @return color WHITE (0) or BLACK (1). Reverts for EMPTY or invalid encoding.
-     * @dev Reverts with specific message if color depends on global state (KING_TO_MOVE).
      */
-    function getColor(uint8[BOARD_SIZE] memory board, uint8 square) internal pure returns (uint8 color) {
+    function getColor(uint8[BOARD_SIZE] memory board, uint8 square, uint8 contextTurnColor) internal pure returns (uint8 color) {
         uint8 pieceId = board[square];
         if (pieceId == EMPTY) revert PieceNotFound();
 
@@ -818,25 +771,19 @@ library ChessLogic {
 
         // Special Cases requiring context:
         if (pieceId == JUST_DOUBLE_MOVED_PAWN) {
-            // Color depends on rank where it LANDED.
             uint8 rank = square / 8;
             if (rank == 3) return WHITE; // White pawn landed on 4th rank
             if (rank == 4) return BLACK; // Black pawn landed on 5th rank
             revert InvalidEncoding(); // ID 3 on wrong rank
         }
         if (pieceId == UNMOVED_KING_OR_ROOK) {
-            // Color depends on starting position.
             if (square == A1 || square == H1 || square == E1) return WHITE; // White back rank
             if (square == A8 || square == H8 || square == E8) return BLACK; // Black back rank
              revert InvalidEncoding(); // ID 12 on unexpected square
         }
          if (pieceId == KING_TO_MOVE) {
-             // Color depends on the *other* king's ID found elsewhere on the board.
-             // This requires searching the board, which is inefficient here.
-             // The caller (like decode or processMove) should determine the turn/color
-             // based on the overall state, not just this piece ID in isolation.
-             // Returning a value here is potentially misleading without full context.
-             revert("Cannot determine color for KING_TO_MOVE without full state context");
+             // The piece with ID 15 has the color whose turn it IS.
+             return contextTurnColor;
          }
 
         revert InvalidEncoding(); // Unknown piece ID
@@ -868,10 +815,7 @@ library ChessLogic {
 
          revert InvalidEncoding(); // Unknown piece ID
      }
-    /**
-     * @notice Overload for getBasePieceType when square context is not available or needed.
-     * @dev Reverts if called on UNMOVED_KING_OR_ROOK (ID 12).
-     */
+    /** @notice Overload for getBasePieceType when square context is not available or needed. */
      function getBasePieceType(uint8 pieceId) internal pure returns (uint8 baseTypeId) {
           if (pieceId == UNMOVED_KING_OR_ROOK) {
                revert("getBasePieceType requires square context for UNMOVED_KING_OR_ROOK (ID 12)");
@@ -885,13 +829,12 @@ library ChessLogic {
     function clearJustDoubleMovedPawn(uint8[BOARD_SIZE] memory board) internal pure {
          for(uint i = 0; i < BOARD_SIZE; ++i) {
              if (board[i] == JUST_DOUBLE_MOVED_PAWN) {
-                 // Determine original color based on rank it WAS on (rank 3 or 4)
-                 // FIX: Explicit cast from uint to uint8
                  uint8 rank = uint8(i / 8);
                  if (rank == 3) board[i] = W_PAWN; // Was white pawn on 4th rank
                  else if (rank == 4) board[i] = B_PAWN; // Was black pawn on 5th rank
                  else revert InvalidEncoding(); // Should not happen
-                 // Only one such pawn can exist per side's state, but loop through all just in case.
+                 // Optimization: can break after finding one, as only one can exist per state
+                 // break; // Uncomment if performance becomes critical
              }
          }
      }
@@ -902,41 +845,55 @@ library ChessLogic {
      * @param colorThatMoved The color (WHITE/BLACK) of the player who just finished their move.
      */
     function swapKingTurn(uint8[BOARD_SIZE] memory board, uint8 colorThatMoved) internal pure {
-         uint8 whiteKingActualSq = 255;
-         uint8 blackKingActualSq = 255;
          uint8 movingKingSq = 255;
          uint8 opponentKingSq = 255;
-         uint8 movingKingFinalId = (colorThatMoved == WHITE) ? W_KING : B_KING; // ID the moving king should have *now*
+         uint8 movingKingCurrentId = EMPTY; // ID on the square before swap
+         uint8 opponentKingCurrentId = EMPTY; // ID on the square before swap
 
-         // Find the squares of both kings. This needs to be robust to the different king IDs.
+         // Find both kings based on their *current* IDs on the board (after applyMove)
          for (uint8 i = 0; i < BOARD_SIZE; ++i) {
-              uint8 pid = board[i];
-              if (pid == W_KING || pid == KING_TO_MOVE || (pid == UNMOVED_KING_OR_ROOK && i == E1)) {
-                  // Could be white king
-                  if (whiteKingActualSq == 255) whiteKingActualSq = i;
-                  else revert InvalidEncoding(); // Found two white kings?
-              } else if (pid == B_KING || (pid == KING_TO_MOVE && whiteKingActualSq != i) || (pid == UNMOVED_KING_OR_ROOK && i == E8)) {
-                  // Could be black king (ensure KING_TO_MOVE isn't double counted if white king was also KING_TO_MOVE)
-                  if (blackKingActualSq == 255) blackKingActualSq = i;
-                  else revert InvalidEncoding(); // Found two black kings?
-              }
+             uint8 pid = board[i];
+             // Check for White King (ID 13 or 12 on E1 or 15 if it was white's turn)
+             if (pid == W_KING || (pid == UNMOVED_KING_OR_ROOK && i == E1) || (pid == KING_TO_MOVE && colorThatMoved == WHITE)) {
+                 if (colorThatMoved == WHITE) { movingKingSq = i; movingKingCurrentId = pid; }
+                 else { opponentKingSq = i; opponentKingCurrentId = pid; }
+             }
+             // Check for Black King (ID 14 or 12 on E8 or 15 if it was black's turn)
+             else if (pid == B_KING || (pid == UNMOVED_KING_OR_ROOK && i == E8) || (pid == KING_TO_MOVE && colorThatMoved == BLACK)) {
+                 if (colorThatMoved == BLACK) { movingKingSq = i; movingKingCurrentId = pid; }
+                 else { opponentKingSq = i; opponentKingCurrentId = pid; }
+             }
          }
 
-         if (whiteKingActualSq == 255 || blackKingActualSq == 255) {
-             revert InvalidEncoding(); // Couldn't find both kings
+         // If we couldn't find one of the kings, try finding KING_TO_MOVE explicitly if it wasn't assigned yet
+         if (movingKingSq == 255) {
+             for (uint8 i = 0; i < BOARD_SIZE; ++i) {
+                 if (board[i] == KING_TO_MOVE) {
+                     movingKingSq = i; movingKingCurrentId = KING_TO_MOVE; break;
+                 }
+             }
+         }
+         if (opponentKingSq == 255) {
+             for (uint8 i = 0; i < BOARD_SIZE; ++i) {
+                 // Check standard IDs or unmoved IDs on starting squares
+                 if ((board[i] == W_KING || (board[i] == UNMOVED_KING_OR_ROOK && i == E1)) && colorThatMoved == BLACK) {
+                     opponentKingSq = i; opponentKingCurrentId = board[i]; break;
+                 }
+                 if ((board[i] == B_KING || (board[i] == UNMOVED_KING_OR_ROOK && i == E8)) && colorThatMoved == WHITE) {
+                     opponentKingSq = i; opponentKingCurrentId = board[i]; break;
+                 }
+             }
          }
 
-         // Determine which square belongs to the mover and opponent based on colorThatMoved
-         if (colorThatMoved == WHITE) {
-             movingKingSq = whiteKingActualSq;
-             opponentKingSq = blackKingActualSq;
-         } else {
-             movingKingSq = blackKingActualSq;
-             opponentKingSq = whiteKingActualSq;
+
+         if (movingKingSq == 255 || opponentKingSq == 255) {
+             revert InvalidEncoding(); // Failed to locate both kings after move
          }
 
-         // Ensure the king that moved has its standard ID (W_KING or B_KING)
-         // applyMove should have already done this, but double-check.
+         // Determine the correct *standard* ID for the king that just moved
+         uint8 movingKingFinalId = (colorThatMoved == WHITE) ? W_KING : B_KING;
+
+         // Set the king that moved to its standard ID
          board[movingKingSq] = movingKingFinalId;
 
          // Set the opponent king's ID to KING_TO_MOVE
@@ -960,6 +917,8 @@ library ChessLogic {
 
      /** @notice Absolute value for int8 */
     function abs(int8 x) internal pure returns (int8) {
+        // Special case for int8 minimum to avoid overflow
+        if (x == -128) return 127; // Or handle as error, but returning max positive seems reasonable
         return x >= 0 ? x : -x;
     }
 
@@ -1031,16 +990,7 @@ library ChessLogic {
         for (uint8 from = 0; from < BOARD_SIZE; from++) {
             uint8 pieceId = state.board[from];
             if (pieceId != EMPTY) {
-                 // Check piece color using safe method
-                 uint8 currentPieceColor;
-                 // FIX: Handle KING_TO_MOVE ambiguity without try/catch
-                 if (pieceId == KING_TO_MOVE) {
-                     currentPieceColor = playerColor; // Infer color from whose turn it is
-                 } else {
-                     // For other pieces, getColor is safe (or should revert on invalid state)
-                     currentPieceColor = getColor(state.board, from);
-                 }
-
+                 uint8 currentPieceColor = getColor(state.board, from, playerColor); // Pass context color
 
                  if(currentPieceColor == playerColor) {
                     // Found a piece belonging to the current player, check its moves

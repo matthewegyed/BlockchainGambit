@@ -128,7 +128,7 @@ contract ChessTest is Test {
         uint256 initialState = chess.getGameState(gameId);
         assertEq(initialState, ChessLogic.getInitialState(), "Initial state mismatch");
         assertTurn(initialState, ChessLogic.WHITE);
-        assertCastlingRights(initialState, true, true, true, true);
+        assertCastlingRights(initialState, true, true, true, true); // Check initial rights
         assertEnPassantTarget(initialState, -1);
     }
 
@@ -188,6 +188,8 @@ contract ChessTest is Test {
         vm.prank(player1);
         vm.expectRevert(ChessLogic.InvalidSquare.selector);
         chess.makeMove(gameId, E2, 64, EMPTY); // Square 64 is out of bounds
+        // Test the second case (moving *from* out of bounds)
+        // Since the first move reverted, the turn didn't change.
         vm.expectRevert(ChessLogic.InvalidSquare.selector);
         chess.makeMove(gameId, 64, E4, EMPTY);
     }
@@ -566,12 +568,8 @@ contract ChessTest is Test {
         makeMove(gameId, player1, G2, G4); // 2. g4
 
         // Expect the GameEnded event for Black winning
-        // event GameEnded(uint256 indexed gameId, GameStatus result, address winner);
-        // Topic 0: Event signature hash
-        // Topic 1: gameId (indexed)
-        // Data: result, winner (non-indexed)
         bytes memory expectedData = abi.encode(Chess.GameStatus.FINISHED_BLACK_WINS, player2);
-        vm.expectEmit(true, false, false, true, address(chess)); // Check topic 1 (gameId), check data, emitter is chess contract
+        vm.expectEmit(true, false, false, true, address(chess));
         // The actual event emission happens inside the makeMove call below
 
         makeMove(gameId, player2, D8, H4); // 2... Qh4#
@@ -590,14 +588,6 @@ contract ChessTest is Test {
         // Stalemate tests are very hard to set up without state-setting cheats.
         // Marking as skipped until such helpers are available or a feasible sequence is found.
         assertTrue(true, "Skipping stalemate test due to complex setup without state setting helper");
-        // uint256 gameId = startGame(player1, player2);
-        // // Setup a known stalemate position (e.g., WK h1, WQ f2, BK h3, Black to move)
-        // // ... complex sequence of moves ...
-        // // Make the final move by White that leads to stalemate
-        // bytes memory expectedData = abi.encode(Chess.GameStatus.FINISHED_DRAW, address(0));
-        // vm.expectEmit(true, false, false, true, address(chess));
-        // makeMove(gameId, player1, /* from */, /* to */); // The move creating stalemate
-        // assertStatus(gameId, Chess.GameStatus.FINISHED_DRAW);
     }
 
     // --- Invalid Move Geometry ---
@@ -691,5 +681,4 @@ contract ChessTest is Test {
         assertEnPassantTarget(s2, -1); // EP target should be cleared
     }
 
-    // Add more tests as needed, especially focusing on interactions between special rules.
 }
