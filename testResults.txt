@@ -1,0 +1,529 @@
+matt@matt:~/BlockchainGambit$ git fetch origin Nikko
+From https://github.com/matthewegyed/BlockchainGambit
+ * branch            Nikko      -> FETCH_HEAD
+matt@matt:~/BlockchainGambit$ git reset --hard origin/Nikko
+HEAD is now at 920e400 code improvement
+matt@matt:~/BlockchainGambit$ cd chess/
+matt@matt:~/BlockchainGambit/chess$ forge build
+[\u280a] Compiling...
+[\u2803] Compiling 4 files with Solc 0.8.20
+[\u280a] Solc 0.8.20 finished in 32.87s
+Compiler run successful with warnings:
+Warning (2072): Unused local variable.
+   --> src/ChessLogic.sol:117:9:
+    |
+117 |         uint8 otherKingSquare = 255; // Sentinel value
+    |         ^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+   --> src/ChessLogic.sol:595:9:
+    |
+595 |         DecodedState memory state,
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+    --> src/ChessLogic.sol:1068:9:
+     |
+1068 |         uint8 square
+     |         ^^^^^^^^^^^^
+
+Warning (5667): Unused function parameter. Remove or comment out the variable name to silence this warning.
+    --> src/ChessLogic.sol:1273:9:
+     |
+1273 |         uint8 kingSquare
+     |         ^^^^^^^^^^^^^^^^
+
+Warning (2072): Unused local variable.
+   --> test/Chess.t.sol:179:34:
+    |
+179 |         (address p1, address p2, Chess.GameStatus _status) = chess.getGameInfo(
+    |                                  ^^^^^^^^^^^^^^^^^^^^^^^^
+
+Warning (2018): Function state mutability can be restricted to view
+   --> test/Chess.t.sol:165:5:
+    |
+165 |     function setBoardState(uint256 gameId, uint256 encodedState) internal {
+    |     ^ (Relevant source part starts here and spans across multiple lines).
+
+matt@matt:~/BlockchainGambit/chess$ 
+matt@matt:~/BlockchainGambit/chess$ 
+matt@matt:~/BlockchainGambit/chess$ forge test -vvv
+[\u280a] Compiling...
+No files changed, compilation skipped
+
+Ran 33 tests for test/Chess.t.sol:ChessTest
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckScenario_BlockCheck() (gas: 237700)
+Traces:
+  [237700] ChessTest::testCheckScenario_BlockCheck()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 77884452878022414430209244752838656] testCheckScenario_CaptureCheckingPiece() (gas: 110059)
+Traces:
+  [110059] ChessTest::testCheckScenario_CaptureCheckingPiece()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [433] Chess::getGameState(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76]
+    \u251c\u2500 [569] Chess::getGameInfo(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF, 1
+    \u251c\u2500 [0] VM::assertEq(89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76], 77884452878022414430209244752838656 [7.788e34]) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 77884452878022414430209244752838656
+    \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 77884452878022414430209244752838656
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckScenario_DeliverCheck() (gas: 237606)
+Traces:
+  [237606] ChessTest::testCheckScenario_DeliverCheck()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 24735858906897380614166165010400859221584774556258665413706145992794898432] testCheckScenario_DiscoveredCheck() (gas: 110258)
+Traces:
+  [110258] ChessTest::testCheckScenario_DiscoveredCheck()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [433] Chess::getGameState(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76]
+    \u251c\u2500 [569] Chess::getGameInfo(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF, 1
+    \u251c\u2500 [0] VM::assertEq(89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76], 24735858906897380614166165010400859221584774556258665413706145992794898432 [2.473e73]) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 24735858906897380614166165010400859221584774556258665413706145992794898432
+    \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 24735858906897380614166165010400859221584774556258665413706145992794898432
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckmate_BackRankMate() (gas: 237081)
+Traces:
+  [237081] ChessTest::testCheckmate_BackRankMate()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckmate_FoolsMate() (gas: 237684)
+Traces:
+  [237684] ChessTest::testCheckmate_FoolsMate()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128512] Chess::makeMove(0, 13, 21, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 101318078086258616985272695527005611819776948889357650551994193067384140398592] testCheckmate_SmotheredMate() (gas: 110556)
+Traces:
+  [110556] ChessTest::testCheckmate_SmotheredMate()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [433] Chess::getGameState(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76]
+    \u251c\u2500 [569] Chess::getGameInfo(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF, 1
+    \u251c\u2500 [0] VM::assertEq(89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76], 101318078086258616985272695527005611819776948889357650551994193067384140398592 [1.013e77]) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 101318078086258616985272695527005611819776948889357650551994193067384140398592
+    \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 101318078086258616985272695527005611819776948889357650551994193067384140398592
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testEdgeCase_MoveInCorner() (gas: 237470)
+Traces:
+  [237470] ChessTest::testEdgeCase_MoveInCorner()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 15, 31, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testEdgeCase_MoveNearBoardEdge() (gas: 237766)
+Traces:
+  [237766] ChessTest::testEdgeCase_MoveNearBoardEdge()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 8, 24, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_BishopSimpleMove() (gas: 237376)
+Traces:
+  [237376] ChessTest::testMakeValidMove_BishopSimpleMove()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_BlackKingsideCastle() (gas: 237744)
+Traces:
+  [237744] ChessTest::testMakeValidMove_BlackKingsideCastle()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_BlackQueensideCastle() (gas: 237822)
+Traces:
+  [237822] ChessTest::testMakeValidMove_BlackQueensideCastle()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_Capture() (gas: 237238)
+Traces:
+  [237238] ChessTest::testMakeValidMove_Capture()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_EnPassant() (gas: 237964)
+Traces:
+  [237964] ChessTest::testMakeValidMove_EnPassant()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_PawnE4() (gas: 237398)
+Traces:
+  [237398] ChessTest::testMakeValidMove_PawnE4()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_PawnPromotion() (gas: 237172)
+Traces:
+  [237172] ChessTest::testMakeValidMove_PawnPromotion()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 15, 31, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_QueenSimpleMove() (gas: 237150)
+Traces:
+  [237150] ChessTest::testMakeValidMove_QueenSimpleMove()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 11, 27, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_RookEdgeCase() (gas: 237436)
+Traces:
+  [237436] ChessTest::testMakeValidMove_RookEdgeCase()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 8, 24, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_RookSimpleMove() (gas: 237486)
+Traces:
+  [237486] ChessTest::testMakeValidMove_RookSimpleMove()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 8, 24, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_Sequence() (gas: 237656)
+Traces:
+  [237656] ChessTest::testMakeValidMove_Sequence()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_WhiteKingsideCastle() (gas: 237040)
+Traces:
+  [237040] ChessTest::testMakeValidMove_WhiteKingsideCastle()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 108555083659983933209597798445644913612440610624038028786991485019513186942989] testStalemate_CorneredKing() (gas: 109941)
+Traces:
+  [109941] ChessTest::testStalemate_CorneredKing()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [433] Chess::getGameState(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76]
+    \u251c\u2500 [569] Chess::getGameInfo(0) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Return] 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF, 1
+    \u251c\u2500 [0] VM::assertEq(89329519404556770540887455120152703601094263552520667740044088049577235555916 [8.932e76], 108555083659983933209597798445644913612440610624038028786991485019513186942989 [1.085e77]) [staticcall]
+    \u2502   \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 108555083659983933209597798445644913612440610624038028786991485019513186942989
+    \u2514\u2500 \u2190 [Revert] assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 108555083659983933209597798445644913612440610624038028786991485019513186942989
+
+[PASS] testStartGame() (gas: 160321)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_CastleKingMoved() (gas: 238020)
+Traces:
+  [238020] ChessTest::test_RevertIf_CastleKingMoved()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_CastlePathBlocked() (gas: 237631)
+Traces:
+  [237631] ChessTest::test_RevertIf_CastlePathBlocked()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_EnPassantNotImmediately() (gas: 237012)
+Traces:
+  [237012] ChessTest::test_RevertIf_EnPassantNotImmediately()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[PASS] test_RevertIf_InvalidMoveKnightLikeBishop() (gas: 197569)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_InvalidMovePawnBackwards() (gas: 237345)
+Traces:
+  [237345] ChessTest::test_RevertIf_InvalidMovePawnBackwards()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_MoveIntoCheck() (gas: 237678)
+Traces:
+  [237678] ChessTest::test_RevertIf_MoveIntoCheck()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_MoveNotYourTurn() (gas: 283016)
+Traces:
+  [283016] ChessTest::test_RevertIf_MoveNotYourTurn()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::expectRevert(custom error 0xc31eb0e0: a717dfcc00000000000000000000000000000000000000000000000000000000)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [0] VM::prank(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [43607] Chess::makeMove(0, 51, 35, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] NotPlayer()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 12, 28, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_PawnPromotionInvalidPiece() (gas: 237134)
+Traces:
+  [237134] ChessTest::test_RevertIf_PawnPromotionInvalidPiece()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 15, 31, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_PawnPromotionMustPromote() (gas: 237068)
+Traces:
+  [237068] ChessTest::test_RevertIf_PawnPromotionMustPromote()
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [94864] Chess::startGame(0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u251c\u2500 emit GameStarted(gameId: 0, white: 0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf, black: 0x2B5AD5c4795c026514f8317c7a215E218DcCD6cF)
+    \u2502   \u2514\u2500 \u2190 [Return] 0
+    \u251c\u2500 [0] VM::prank(0x7E5F4552091A69125d5DfCb7b8C2659029395Bdf)
+    \u2502   \u2514\u2500 \u2190 [Return] 
+    \u251c\u2500 [128767] Chess::makeMove(0, 15, 31, 0)
+    \u2502   \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+    \u2514\u2500 \u2190 [Revert] revert: getBasePieceType requires square context for ID 12
+
+[PASS] test_RevertIf_StartGameInvalidOpponent() (gas: 13099)
+Suite result: FAILED. 3 passed; 30 failed; 0 skipped; finished in 6.33ms (45.70ms CPU time)
+
+Ran 1 test suite in 232.75ms (6.33ms CPU time): 3 tests passed, 30 failed, 0 skipped (33 total tests)
+
+Failing tests:
+Encountered 30 failing tests in test/Chess.t.sol:ChessTest
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckScenario_BlockCheck() (gas: 237700)
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 77884452878022414430209244752838656] testCheckScenario_CaptureCheckingPiece() (gas: 110059)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckScenario_DeliverCheck() (gas: 237606)
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 24735858906897380614166165010400859221584774556258665413706145992794898432] testCheckScenario_DiscoveredCheck() (gas: 110258)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckmate_BackRankMate() (gas: 237081)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testCheckmate_FoolsMate() (gas: 237684)
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 101318078086258616985272695527005611819776948889357650551994193067384140398592] testCheckmate_SmotheredMate() (gas: 110556)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testEdgeCase_MoveInCorner() (gas: 237470)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testEdgeCase_MoveNearBoardEdge() (gas: 237766)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_BishopSimpleMove() (gas: 237376)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_BlackKingsideCastle() (gas: 237744)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_BlackQueensideCastle() (gas: 237822)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_Capture() (gas: 237238)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_EnPassant() (gas: 237964)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_PawnE4() (gas: 237398)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_PawnPromotion() (gas: 237172)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_QueenSimpleMove() (gas: 237150)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_RookEdgeCase() (gas: 237436)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_RookSimpleMove() (gas: 237486)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_Sequence() (gas: 237656)
+[FAIL: revert: getBasePieceType requires square context for ID 12] testMakeValidMove_WhiteKingsideCastle() (gas: 237040)
+[FAIL: assertion failed: 89329519404556770540887455120152703601094263552520667740044088049577235555916 != 108555083659983933209597798445644913612440610624038028786991485019513186942989] testStalemate_CorneredKing() (gas: 109941)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_CastleKingMoved() (gas: 238020)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_CastlePathBlocked() (gas: 237631)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_EnPassantNotImmediately() (gas: 237012)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_InvalidMovePawnBackwards() (gas: 237345)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_MoveIntoCheck() (gas: 237678)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_MoveNotYourTurn() (gas: 283016)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_PawnPromotionInvalidPiece() (gas: 237134)
+[FAIL: revert: getBasePieceType requires square context for ID 12] test_RevertIf_PawnPromotionMustPromote() (gas: 237068)
+
+Encountered a total of 30 failing tests, 3 tests succeeded
