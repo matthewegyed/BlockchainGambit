@@ -190,6 +190,8 @@ contract ChessTest is Test {
         chess.makeMove(gameId, E2, 64, EMPTY); // Square 64 is out of bounds
         // Test the second case (moving *from* out of bounds)
         // Since the first move reverted, the turn didn't change.
+        // ** Correction: Need to prank again as player1 for the second check **
+        vm.prank(player1);
         vm.expectRevert(ChessLogic.InvalidSquare.selector);
         chess.makeMove(gameId, 64, E4, EMPTY);
     }
@@ -262,8 +264,9 @@ contract ChessTest is Test {
 
     function testQueen_ValidMoveDiagonal() public {
         uint256 gameId = startGame(player1, player2);
-        makeMove(gameId, player1, D2, D4); // Open path
-        makeMove(gameId, player2, E7, E5);
+        // Use 1. e4 e5 2. Qh5
+        makeMove(gameId, player1, E2, E4); // Open path
+        makeMove(gameId, player2, E7, E5); // Black opens path
         makeMove(gameId, player1, D1, H5); // Qh5
         uint256 s3 = chess.getGameState(gameId);
         assertPiece(s3, D1, EMPTY, "Queen D1->H5: D1 not empty");
@@ -308,15 +311,18 @@ contract ChessTest is Test {
 
     function testCapture_KnightTakesPawn() public {
         uint256 gameId = startGame(player1, player2);
+        // 1. e4 Nc6 2. Nf3 e5 3. Nxe5
         makeMove(gameId, player1, E2, E4);
-        makeMove(gameId, player2, D7, D5);
-        makeMove(gameId, player1, G1, F3);
-        makeMove(gameId, player2, D5, E4); // Pawn takes pawn (setup)
-        makeMove(gameId, player1, F3, E5); // Knight takes pawn
+        makeMove(gameId, player2, B8, C6); // Nc6
+        makeMove(gameId, player1, G1, F3); // Nf3
+        makeMove(gameId, player2, E7, E5); // e5
+        makeMove(gameId, player1, F3, E5); // Nxe5 (Capture!)
         uint256 s5 = chess.getGameState(gameId);
         assertPiece(s5, F3, EMPTY, "Capture Nxe5: F3 not empty");
         assertPiece(s5, E5, W_KNIGHT, "Capture Nxe5: E5 not W_KNIGHT");
-        assertPiece(s5, E4, EMPTY, "Capture Nxe5: E4 (captured pawn) not empty");
+        // E4 was never occupied by black in this sequence. The captured pawn was on E5.
+        // The assertion should check that E5 now has the Knight, which it does.
+        // No need to check E4 here. The previous assertions cover the move.
         assertTurn(s5, ChessLogic.BLACK);
     }
 
@@ -479,21 +485,20 @@ contract ChessTest is Test {
     // --- Promotion ---
     function testPromotion_ToQueen() public {
         uint256 gameId = startGame(player1, player2);
-        // Setup: White pawn on g7, Black king on e7, White king on e1. White to move.
-        // 1. g4 h5 2. g5 h4 3. g6 hxg6 4. h4 a5 5. h5 a4 6. h6 a3 7. hxg7 Ra4
-        makeMove(gameId, player1, G2, G4); makeMove(gameId, player2, H7, H5);
-        makeMove(gameId, player1, G4, G5); makeMove(gameId, player2, H5, H4);
-        makeMove(gameId, player1, G5, G6); makeMove(gameId, player2, H4, G3); // Capture to clear path
-        makeMove(gameId, player1, H2, H4); makeMove(gameId, player2, A7, A5);
-        makeMove(gameId, player1, H4, H5); makeMove(gameId, player2, A5, A4);
-        makeMove(gameId, player1, H5, H6); makeMove(gameId, player2, A4, A3);
-        makeMove(gameId, player1, H6, G7); makeMove(gameId, player2, A8, A4); // Move rook out of way
+        // Setup: 1. c4 f5 2. c5 f4 3. c6 fxe3 4. cxb7 exd2+ 5. Nc3 Ra7 6. b8=Q
+        makeMove(gameId, player1, C2, C4); makeMove(gameId, player2, F7, F5);
+        makeMove(gameId, player1, C4, C5); makeMove(gameId, player2, F5, F4);
+        makeMove(gameId, player1, C5, C6); makeMove(gameId, player2, F4, E3); // Black captures pawn
+        makeMove(gameId, player1, C6, B7); // White captures pawn
+        makeMove(gameId, player2, E3, D2); // Black captures pawn, check (irrelevant for promo test)
+        makeMove(gameId, player1, B1, C3); // White blocks check
+        makeMove(gameId, player2, A8, A7); // Black moves rook
 
-        makeMove(gameId, player1, G7, H8, W_QUEEN); // Promote to Queen
-        uint256 s15 = chess.getGameState(gameId);
-        assertPiece(s15, G7, EMPTY, "Promo Q: G7 not empty");
-        assertPiece(s15, H8, W_QUEEN, "Promo Q: H8 not W_QUEEN");
-        assertTurn(s15, ChessLogic.BLACK);
+        makeMove(gameId, player1, B7, B8, W_QUEEN); // Promote to Queen
+        uint256 s13 = chess.getGameState(gameId);
+        assertPiece(s13, B7, EMPTY, "Promo Q: B7 not empty");
+        assertPiece(s13, B8, W_QUEEN, "Promo Q: B8 not W_QUEEN");
+        assertTurn(s13, ChessLogic.BLACK);
     }
 
     // Add similar tests for promotion to Rook, Bishop, Knight
@@ -501,37 +506,37 @@ contract ChessTest is Test {
     function test_RevertIf_PawnPromotionInvalidPiece() public {
         uint256 gameId = startGame(player1, player2);
         // Setup as above...
-        makeMove(gameId, player1, G2, G4); makeMove(gameId, player2, H7, H5);
-        makeMove(gameId, player1, G4, G5); makeMove(gameId, player2, H5, H4);
-        makeMove(gameId, player1, G5, G6); makeMove(gameId, player2, H4, G3);
-        makeMove(gameId, player1, H2, H4); makeMove(gameId, player2, A7, A5);
-        makeMove(gameId, player1, H4, H5); makeMove(gameId, player2, A5, A4);
-        makeMove(gameId, player1, H5, H6); makeMove(gameId, player2, A4, A3);
-        makeMove(gameId, player1, H6, G7); makeMove(gameId, player2, A8, A4);
+        makeMove(gameId, player1, C2, C4); makeMove(gameId, player2, F7, F5);
+        makeMove(gameId, player1, C4, C5); makeMove(gameId, player2, F5, F4);
+        makeMove(gameId, player1, C5, C6); makeMove(gameId, player2, F4, E3);
+        makeMove(gameId, player1, C6, B7);
+        makeMove(gameId, player2, E3, D2);
+        makeMove(gameId, player1, B1, C3);
+        makeMove(gameId, player2, A8, A7);
 
         vm.prank(player1);
         vm.expectRevert(ChessLogic.InvalidMove.selector);
-        chess.makeMove(gameId, G7, H8, W_PAWN); // Try to promote to Pawn
+        chess.makeMove(gameId, B7, B8, W_PAWN); // Try to promote to Pawn
         vm.expectRevert(ChessLogic.InvalidMove.selector);
-        chess.makeMove(gameId, G7, H8, W_KING); // Try to promote to King
+        chess.makeMove(gameId, B7, B8, W_KING); // Try to promote to King
         vm.expectRevert(ChessLogic.InvalidMove.selector);
-        chess.makeMove(gameId, G7, H8, B_QUEEN); // Try to promote to wrong color
+        chess.makeMove(gameId, B7, B8, B_QUEEN); // Try to promote to wrong color
     }
 
      function test_RevertIf_PawnPromotionMustPromote() public {
         uint256 gameId = startGame(player1, player2);
         // Setup as above...
-        makeMove(gameId, player1, G2, G4); makeMove(gameId, player2, H7, H5);
-        makeMove(gameId, player1, G4, G5); makeMove(gameId, player2, H5, H4);
-        makeMove(gameId, player1, G5, G6); makeMove(gameId, player2, H4, G3);
-        makeMove(gameId, player1, H2, H4); makeMove(gameId, player2, A7, A5);
-        makeMove(gameId, player1, H4, H5); makeMove(gameId, player2, A5, A4);
-        makeMove(gameId, player1, H5, H6); makeMove(gameId, player2, A4, A3);
-        makeMove(gameId, player1, H6, G7); makeMove(gameId, player2, A8, A4);
+        makeMove(gameId, player1, C2, C4); makeMove(gameId, player2, F7, F5);
+        makeMove(gameId, player1, C4, C5); makeMove(gameId, player2, F5, F4);
+        makeMove(gameId, player1, C5, C6); makeMove(gameId, player2, F4, E3);
+        makeMove(gameId, player1, C6, B7);
+        makeMove(gameId, player2, E3, D2);
+        makeMove(gameId, player1, B1, C3);
+        makeMove(gameId, player2, A8, A7);
 
         vm.prank(player1);
         vm.expectRevert(ChessLogic.InvalidMove.selector); // Missing promotion choice leads to InvalidMove
-        chess.makeMove(gameId, G7, H8, EMPTY); // Send EMPTY promotion type
+        chess.makeMove(gameId, B7, B8, EMPTY); // Send EMPTY promotion type
      }
 
     // --- Check and Checkmate ---
