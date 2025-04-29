@@ -1,2 +1,2 @@
-cache/
-out/
+chess/cache/*
+chess/out/*
