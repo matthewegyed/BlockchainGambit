@@ -162,7 +162,6 @@ library ChessLogic {
             }
         } else {
             // KING_TO_MOVE ID (15) was NOT found. This should only be the initial state.
-            // In the initial state, White King is 15, Black King is 14.
             // getInitialState() sets board[E1]=15, board[E8]=14.
             // Our loop above should have found blackKingSquare=E8 (ID 14) and whiteKingSquare=255.
             // We need to check if the piece at E1 is indeed KING_TO_MOVE.
@@ -339,7 +338,7 @@ library ChessLogic {
     ) internal pure returns (bool) {
         uint8 piece = state.board[from];
         uint8 targetPiece = state.board[to];
-        uint8 movingColor = getColor(state.board, from, state.turn); // Pass current turn as context
+        uint8 movingColor = getColor(state.board, from, state.turn); // Pass context color
 
         // Basic checks: cannot capture own piece
         if (targetPiece != EMPTY && getColor(state.board, to, state.turn) == movingColor) { // Pass context color
@@ -375,28 +374,27 @@ library ChessLogic {
 
     function isPawnMoveLegal(DecodedState memory state, uint8 from, uint8 to, uint8 promotionPieceType) internal pure returns (bool) {
         uint8 movingColor = getColor(state.board, from, state.turn); // Pass context color
-        uint256 uDiff = (to > from) ? to - from : from - to;
-        bool movingForward = (movingColor == WHITE && to > from) || (movingColor == BLACK && from > to);
         uint8 fromRank = from / 8;
         uint8 toRank = to / 8;
         uint8 fromFile = from % 8;
         uint8 toFile = to % 8;
         uint8 fileDiff = (toFile > fromFile) ? toFile - fromFile : fromFile - toFile;
+        bool isDiagonal = fileDiff == 1;
 
         if (movingColor == WHITE) {
             // 1. Forward 1 square
-            if (movingForward && uDiff == 8 && fileDiff == 0 && state.board[to] == EMPTY) {
+            if (toRank == fromRank + 1 && fileDiff == 0 && state.board[to] == EMPTY) {
                 bool isPromotion = (toRank == 7);
                 if (isPromotion && !isValidPromotionPiece(WHITE, promotionPieceType)) return false;
                 if (!isPromotion && promotionPieceType != EMPTY) return false;
                 return true;
             }
             // 2. Forward 2 squares (initial move)
-            if (movingForward && fromRank == 1 && uDiff == 16 && fileDiff == 0 && state.board[from + 8] == EMPTY && state.board[to] == EMPTY) {
+            if (fromRank == 1 && toRank == 3 && fileDiff == 0 && state.board[from + 8] == EMPTY && state.board[to] == EMPTY) {
                 return promotionPieceType == EMPTY; // Cannot promote on double move
             }
-            // 3. Capture
-            if (movingForward && (uDiff == 7 || uDiff == 9) && fileDiff == 1) { // Diagonal forward
+            // 3. Capture (Standard or En Passant)
+            if (isDiagonal && toRank == fromRank + 1) { // Must move one rank forward diagonally
                 bool isPromotion = (toRank == 7);
                 // Standard capture
                 if (state.board[to] != EMPTY && getColor(state.board, to, state.turn) == BLACK) { // Pass context color
@@ -414,18 +412,18 @@ library ChessLogic {
             }
         } else { // BLACK pawn move
             // 1. Forward 1 square
-            if (movingForward && uDiff == 8 && fileDiff == 0 && state.board[to] == EMPTY) {
+            if (toRank == fromRank - 1 && fileDiff == 0 && state.board[to] == EMPTY) {
                 bool isPromotion = (toRank == 0);
                 if (isPromotion && !isValidPromotionPiece(BLACK, promotionPieceType)) return false;
                 if (!isPromotion && promotionPieceType != EMPTY) return false;
                 return true;
             }
             // 2. Forward 2 squares (initial move)
-            if (movingForward && fromRank == 6 && uDiff == 16 && fileDiff == 0 && state.board[from - 8] == EMPTY && state.board[to] == EMPTY) {
+            if (fromRank == 6 && toRank == 4 && fileDiff == 0 && state.board[from - 8] == EMPTY && state.board[to] == EMPTY) {
                 return promotionPieceType == EMPTY; // Cannot promote on double move
             }
-            // 3. Capture
-            if (movingForward && (uDiff == 7 || uDiff == 9) && fileDiff == 1) { // Diagonal forward
+            // 3. Capture (Standard or En Passant)
+            if (isDiagonal && toRank == fromRank - 1) { // Must move one rank forward diagonally
                  bool isPromotion = (toRank == 0);
                  // Standard capture
                 if (state.board[to] != EMPTY && getColor(state.board, to, state.turn) == WHITE) { // Pass context color
@@ -444,6 +442,7 @@ library ChessLogic {
         }
         return false; // Not a valid pawn move
     }
+
 
     function isKnightMoveLegal(DecodedState memory state, uint8 from, uint8 to) internal pure returns (bool) {
         // Target square occupation (own piece) checked in isMovePseudoLegal caller
@@ -481,7 +480,7 @@ library ChessLogic {
             if (currentRank < 0 || currentRank > 7 || currentFile < 0 || currentFile > 7) {
                 revert InvalidEncoding(); // Path goes off board - should not happen with valid inputs
             }
-            // FIX: Cast int8 directly to uint8 for square index calculation
+            // ** Correction: Cast rank and file to uint8 *before* calculation **
             uint8 intermediateSquare = uint8(currentRank) * 8 + uint8(currentFile);
             if (board[intermediateSquare] != EMPTY) {
                 return false; // Path is blocked
@@ -642,8 +641,14 @@ library ChessLogic {
         }
 
         // 3. Place the piece on the 'to' square, clear the 'from' square
-        nextState.board[to] = pieceIdToPlace;
-        nextState.board[from] = EMPTY;
+        // ** Correction: Clear the 'to' square *before* placing if it's a capture (non-EP) **
+        if (nextState.board[to] != EMPTY && !(baseType == W_PAWN && state.enPassantTargetSquare >= 0 && to == uint8(uint16(state.enPassantTargetSquare)))) {
+            // It's a standard capture (not EP), clear the target square first.
+            // (The check for capturing own piece is done earlier in isMovePseudoLegal)
+            nextState.board[to] = EMPTY; // Clear target square
+        }
+        nextState.board[to] = pieceIdToPlace; // Place the piece
+        nextState.board[from] = EMPTY; // Empty original square
 
         // 4. Update king positions in the state struct for subsequent check detection
         if (baseType == W_KING) {
@@ -715,12 +720,16 @@ library ChessLogic {
             else if (piece == B_PAWN || (piece == JUST_DOUBLE_MOVED_PAWN && from / 8 == 4)) attackerColor = BLACK;
             else return false; // Not a pawn type that can attack
 
-            uint256 uDiff = (to > from) ? to - from : from - to;
-            uint8 fileDiff = (to % 8 > from % 8) ? (to % 8) - (from % 8) : (from % 8) - (to % 8);
+            uint8 fromRank = from / 8;
+            uint8 toRank = to / 8;
+            uint8 fromFile = from % 8;
+            uint8 toFile = to % 8;
+            uint8 fileDiff = (toFile > fromFile) ? toFile - fromFile : fromFile - toFile;
+
             if (attackerColor == WHITE) {
-                return to > from && (uDiff == 7 || uDiff == 9) && fileDiff == 1; // White pawns attack diagonally forward
+                return toRank == fromRank + 1 && fileDiff == 1; // White pawns attack diagonally forward one rank
             } else { // Black Pawn
-                return from > to && (uDiff == 7 || uDiff == 9) && fileDiff == 1; // Black pawns attack diagonally forward
+                return toRank == fromRank - 1 && fileDiff == 1; // Black pawns attack diagonally forward one rank
             }
         }
         if (baseType == W_KNIGHT) {

@@ -190,6 +190,8 @@ contract ChessTest is Test {
         chess.makeMove(gameId, E2, 64, EMPTY); // Square 64 is out of bounds
         // Test the second case (moving *from* out of bounds)
         // Since the first move reverted, the turn didn't change.
+        // ** Correction: Need to prank again as player1 for the second check **
+        vm.prank(player1);
         vm.expectRevert(ChessLogic.InvalidSquare.selector);
         chess.makeMove(gameId, 64, E4, EMPTY);
     }
@@ -308,15 +310,18 @@ contract ChessTest is Test {
 
     function testCapture_KnightTakesPawn() public {
         uint256 gameId = startGame(player1, player2);
+        // 1. e4 Nc6 2. Nf3 e5 3. Nxe5
         makeMove(gameId, player1, E2, E4);
-        makeMove(gameId, player2, D7, D5);
-        makeMove(gameId, player1, G1, F3);
-        makeMove(gameId, player2, D5, E4); // Pawn takes pawn (setup)
-        makeMove(gameId, player1, F3, E5); // Knight takes pawn
+        makeMove(gameId, player2, B8, C6); // Nc6
+        makeMove(gameId, player1, G1, F3); // Nf3
+        makeMove(gameId, player2, E7, E5); // e5
+        makeMove(gameId, player1, F3, E5); // Nxe5 (Capture!)
         uint256 s5 = chess.getGameState(gameId);
         assertPiece(s5, F3, EMPTY, "Capture Nxe5: F3 not empty");
         assertPiece(s5, E5, W_KNIGHT, "Capture Nxe5: E5 not W_KNIGHT");
-        assertPiece(s5, E4, EMPTY, "Capture Nxe5: E4 (captured pawn) not empty");
+        // E4 was never occupied by black in this sequence. The captured pawn was on E5.
+        // The assertion should check that E5 now has the Knight, which it does.
+        // No need to check E4 here. The previous assertions cover the move.
         assertTurn(s5, ChessLogic.BLACK);
     }
 
