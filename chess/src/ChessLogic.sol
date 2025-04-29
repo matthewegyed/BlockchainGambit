@@ -641,13 +641,9 @@ library ChessLogic {
         }
 
         // 3. Place the piece on the 'to' square, clear the 'from' square
-        // ** Correction: Clear the 'to' square *before* placing if it's a capture (non-EP) **
-        if (nextState.board[to] != EMPTY && !(baseType == W_PAWN && state.enPassantTargetSquare >= 0 && to == uint8(uint16(state.enPassantTargetSquare)))) {
-            // It's a standard capture (not EP), clear the target square first.
-            // (The check for capturing own piece is done earlier in isMovePseudoLegal)
-            nextState.board[to] = EMPTY; // Clear target square
-        }
-        nextState.board[to] = pieceIdToPlace; // Place the piece
+        // The act of writing `pieceIdToPlace` to `nextState.board[to]` overwrites
+        // whatever was there, effectively performing the capture.
+        nextState.board[to] = pieceIdToPlace; // Place the piece (overwrites if capture)
         nextState.board[from] = EMPTY; // Empty original square
 
         // 4. Update king positions in the state struct for subsequent check detection
