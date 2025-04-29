@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This project implements a functional, minimalistic two-player chess game entirely on the blockchain using Solidity and Foundry. It focuses on minimizing storage costs by employing a highly compressed 256-bit representation for the complete game state, including piece positions, turn, castling rights, and en passant availability. All standard chess moves, including special cases like castling and en passant, are validated directly within the smart contract, ensuring rule adherence without external oracles. The system enforces player turns and detects checkmate and stalemate conditions, providing a verifiable and decentralized platform for chess gameplay.
+This project attempts to implement a minimalistic two-player chess game entirely on the blockchain using Solidity and Foundry. It focuses on minimizing storage costs by employing a highly compressed 256-bit representation for the complete game state, including piece positions, turn, castling rights, and en passant availability. All standard chess moves, including special cases like castling and en passant, are validated directly within the smart contract, ensuring rule adherence without external oracles. The system enforces player turns and detects checkmate and stalemate conditions, providing a verifiable and decentralized platform for chess gameplay.
 
 ## Background/Motivation
 
@@ -27,7 +27,7 @@ The core of the project lies in its efficient state management and on-chain vali
 
 ## Results
 
-The project successfully implements a playable on-chain chess game with the following features:
+The project currently implements most features of a playable on-chain chess game with the following capabilities at various stages of development:
 
 -   **Compact Storage:** Achieved the goal of storing the game state within a single `uint256`.
 -   **Full Move Validation:** Supports and validates all standard chess moves, including castling, en passant, and pawn promotion, directly on-chain.
@@ -42,7 +42,6 @@ Due to complexity and gas cost considerations, the following features were expli
 -   Time controls and game clocks.
 -   50-move rule tracking.
 -   3-fold repetition detection.
--   Integration with chess engines for analysis or AI opponents.
 
 While the move validation logic is comprehensive, executing it fully on-chain (especially checkmate/stalemate detection which requires evaluating all potential moves) can be computationally intensive and may incur significant gas costs, making Layer 2 solutions a more practical deployment target for frequent use.
 
